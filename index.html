@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>정보 이용 탐색 알고리즘 비교</title>
+<style>
+@font-face {
+  font-family: 'KoPub World 돋움';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2102_ko@1.0/KoPubWorldDotumMedium.woff') format('woff');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'KoPub World 돋움';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2102_ko@1.0/KoPubWorldDotumBold.woff') format('woff');
+  font-weight: 700;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #6b8c63;
+  color: #f2f1df;
+  font-family: 'KoPub World 돋움', 'Malgun Gothic', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 12px;
+  gap: 12px;
+}
+h1 { font-size: 1.15rem; color: #f2f1df; }
+.subtitle { font-size: .72rem; color: #b0c4a0; }
+.controls {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; justify-content: center;
+  background: #567050; border: 1px solid #4d6646;
+  border-radius: 10px; padding: 10px 14px;
+}
+.ctrl-label { font-size: .8rem; color: #c0d0b0; }
+input[type=range] { accent-color: #e8a0aa; width: 100px; }
+button {
+  padding: 7px 14px; border: none; border-radius: 7px;
+  cursor: pointer; font-size: .82rem; font-family: inherit; transition: background .15s;
+}
+#genBtn   { background: #4d6646; color: #f2f1df; }
+#genBtn:hover   { background: #425740; }
+#resetBtn { background: #425740; color: #c0d0b0; }
+#resetBtn:hover { background: #374d35; }
+#startBtn { background: #e8a0aa; color: #3a2a2a; font-weight: 700; }
+#startBtn:hover { background: #f0b0bc; }
+#startBtn:disabled { background: #4d6646; color: #888; cursor: default; }
+.grids { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.grid-section {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: #567050; border: 2px solid #4d6646; border-radius: 10px; padding: 10px;
+}
+.algo-title { font-size: .88rem; font-weight: 700; color: #f2f1df; text-align: center; width: 100%; }
+canvas { border-radius: 4px; border: 1px solid #4d6646; display: block; cursor: crosshair; }
+.stats { font-size: .75rem; color: #b0c4a0; text-align: center; min-height: 18px; }
+.stats b { color: #f2f1df; }
+.ok   { color: #4ade80; }
+.fail { color: #f87171; }
+.legend {
+  display: flex; gap: 10px; flex-wrap: wrap; font-size: .72rem;
+  color: #b0c4a0; justify-content: center;
+  background: #567050; border: 1px solid #4d6646; border-radius: 8px; padding: 8px 12px;
+}
+.litem { display: flex; align-items: center; gap: 4px; }
+.ldot  { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+.tip { font-size: .68rem; color: #8a9a80; }
+</style>
+</head>
+<body>
+
+<h1>🗺️ 정보 이용 탐색 알고리즘 비교</h1>
+<p class="subtitle">같은 미로에서 세 알고리즘이 어떻게 다르게 탐색하는지 비교 — 숫자는 h값(목표까지 추정 거리)</p>
+
+<div class="controls">
+  <button id="genBtn">🎲 미로 생성</button>
+  <span class="ctrl-label">⚡ 속도</span>
+  <input type="range" id="speed" min="1" max="10" value="5">
+  <button id="resetBtn">↺ 초기화</button>
+  <button id="startBtn">▶ 탐색 시작</button>
+</div>
+
+<div class="grids">
+  <div class="grid-section">
+    <div class="algo-title">🏔️ 언덕 등반 탐색</div>
+    <canvas id="c0"></canvas>
+    <div class="stats" id="s0">준비 중...</div>
+  </div>
+  <div class="grid-section">
+    <div class="algo-title">⭐ 최상 우선 탐색</div>
+    <canvas id="c1"></canvas>
+    <div class="stats" id="s1">준비 중...</div>
+  </div>
+  <div class="grid-section">
+    <div class="algo-title">🎯 A* 탐색</div>
+    <canvas id="c2"></canvas>
+    <div class="stats" id="s2">준비 중...</div>
+  </div>
+</div>
+
+<div class="legend">
+  <span class="litem"><span class="ldot" style="background:#60a5fa"></span>시작</span>
+  <span class="litem"><span class="ldot" style="background:#e8a0aa"></span>목표</span>
+  <span class="litem"><span class="ldot" style="background:#2a3820"></span>벽</span>
+  <span class="litem"><span class="ldot" style="background:#fde68a"></span>방문(closed)</span>
+  <span class="litem"><span class="ldot" style="background:#d0edbc"></span>대기(frontier)</span>
+  <span class="litem"><span class="ldot" style="background:#f59e0b; border:2px solid #fff"></span>현재 탐색</span>
+  <span class="litem"><span class="ldot" style="background:#f97316"></span>최종 경로</span>
+  <span class="litem"><span class="ldot" style="background:#f87171"></span>막힘</span>
+</div>
+<p class="tip">💡 격자를 클릭하면 벽을 추가/제거할 수 있어요 (탐색 전에만 가능)</p>
+
+<script>
+'use strict';
+
+const ROWS=10, COLS=15, CELL=24;
+const W=COLS*CELL, H=ROWS*CELL;
+
+// 알고리즘별 색상
+const ALGO=[
+  {visited:'#fde68a', frontier:'#d0edbc', current:'#f59e0b', path:'#f97316', stuck:'#f87171'},
+  {visited:'#c4b5fd', frontier:'#d0edbc', current:'#8b5cf6', path:'#7c3aed', stuck:'#f87171'},
+  {visited:'#a5f3fc', frontier:'#d0edbc', current:'#06b6d4', path:'#0284c7', stuck:'#f87171'},
+];
+
+const startPos={r:0,c:0}, goalPos={r:ROWS-1,c:COLS-1};
+let grid=[], allSteps=[[],[],[]], cellSt=[];
+
+// ── 유틸 ─────────────────────────────────────────────────────────
+const pk=(r,c)=>r*COLS+c;
+const H_=(r,c)=>Math.abs(r-goalPos.r)+Math.abs(c-goalPos.c);
+
+function nbrs(r,c){
+  return [[-1,0],[1,0],[0,-1],[0,1]]
+    .map(([dr,dc])=>({r:r+dr,c:c+dc}))
+    .filter(n=>n.r>=0&&n.r<ROWS&&n.c>=0&&n.c<COLS&&grid[n.r][n.c]===0);
+}
+
+// ── 미로 생성 ─────────────────────────────────────────────────────
+function generateMaze(){
+  grid=Array.from({length:ROWS},()=>new Array(COLS).fill(0));
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if((r===startPos.r&&c===startPos.c)||(r===goalPos.r&&c===goalPos.c)) continue;
+    if(Math.random()<0.3) grid[r][c]=1;
+  }
+  if(!hasBFSPath()){
+    let r=startPos.r, c=startPos.c;
+    while(r!==goalPos.r||c!==goalPos.c){
+      if(r<goalPos.r) r++; else if(c<goalPos.c) c++;
+      grid[r][c]=0;
+    }
+  }
+}
+
+function hasBFSPath(){
+  const vis=new Set([pk(startPos.r,startPos.c)]), q=[startPos];
+  while(q.length){
+    const {r,c}=q.shift();
+    if(r===goalPos.r&&c===goalPos.c) return true;
+    for(const n of nbrs(r,c)){const k=pk(n.r,n.c);if(!vis.has(k)){vis.add(k);q.push(n);}}
+  }
+  return false;
+}
+
+// ── 단계 형식: 배열<{r,c,st}> ────────────────────────────────────
+
+// ── 1. 언덕 등반 탐색 ────────────────────────────────────────────
+function buildHillClimbing(){
+  const steps=[];
+  const trail=[startPos], trailSet=new Set([pk(startPos.r,startPos.c)]);
+  let cur=startPos;
+  steps.push([{r:cur.r,c:cur.c,st:'current'}]);
+
+  for(let i=0;i<ROWS*COLS*3;i++){
+    if(cur.r===goalPos.r&&cur.c===goalPos.c){
+      steps.push(trail.map(p=>({r:p.r,c:p.c,st:'path'})));
+      return steps;
+    }
+    const ns=nbrs(cur.r,cur.c).filter(n=>!trailSet.has(pk(n.r,n.c)));
+    if(!ns.length||Math.min(...ns.map(n=>H_(n.r,n.c)))>=H_(cur.r,cur.c)){
+      steps.push([{r:cur.r,c:cur.c,st:'stuck'}]);
+      return steps;
+    }
+    const best=ns.reduce((a,b)=>H_(a.r,a.c)<=H_(b.r,b.c)?a:b);
+    steps.push([{r:cur.r,c:cur.c,st:'visited'},{r:best.r,c:best.c,st:'current'}]);
+    trail.push(best); trailSet.add(pk(best.r,best.c)); cur=best;
+  }
+  steps.push([{r:cur.r,c:cur.c,st:'stuck'}]);
+  return steps;
+}
+
+// ── 2. 최상 우선 탐색 ────────────────────────────────────────────
+function buildBestFirst(){
+  const steps=[], vis=new Set(), inFront=new Set(), par={};
+  const pq=[];
+  const push=(r,c,p)=>{pq.push({r,c,p});pq.sort((a,b)=>a.p-b.p);};
+
+  push(startPos.r,startPos.c,H_(startPos.r,startPos.c));
+  inFront.add(pk(startPos.r,startPos.c));
+  steps.push([{r:startPos.r,c:startPos.c,st:'frontier'}]);
+
+  while(pq.length){
+    const {r,c}=pq.shift();
+    const k=pk(r,c);
+    if(vis.has(k)) continue;
+    vis.add(k);
+    steps.push([{r,c,st:'current'}]);
+    if(r===goalPos.r&&c===goalPos.c){
+      const path=[]; let pos={r,c};
+      while(pos){path.push(pos);pos=par[pk(pos.r,pos.c)];}
+      steps.push(path.map(p=>({r:p.r,c:p.c,st:'path'})));
+      return steps;
+    }
+    steps.push([{r,c,st:'visited'}]);
+    for(const n of nbrs(r,c)){
+      const nk=pk(n.r,n.c);
+      if(!vis.has(nk)&&!inFront.has(nk)){
+        par[nk]={r,c}; inFront.add(nk);
+        push(n.r,n.c,H_(n.r,n.c));
+        steps.push([{r:n.r,c:n.c,st:'frontier'}]);
+      }
+    }
+  }
+  steps.push([{r:goalPos.r,c:goalPos.c,st:'stuck'}]);
+  return steps;
+}
+
+// ── 3. A* 탐색 ───────────────────────────────────────────────────
+function buildAStar(){
+  const steps=[], vis=new Set(), par={};
+  const gCost={[pk(startPos.r,startPos.c)]:0};
+  const pq=[];
+  const push=(r,c,f)=>{pq.push({r,c,f});pq.sort((a,b)=>a.f-b.f);};
+
+  push(startPos.r,startPos.c,H_(startPos.r,startPos.c));
+  steps.push([{r:startPos.r,c:startPos.c,st:'frontier'}]);
+
+  while(pq.length){
+    const {r,c}=pq.shift();
+    const k=pk(r,c);
+    if(vis.has(k)) continue;
+    vis.add(k);
+    steps.push([{r,c,st:'current'}]);
+    if(r===goalPos.r&&c===goalPos.c){
+      const path=[]; let pos={r,c};
+      while(pos){path.push(pos);pos=par[pk(pos.r,pos.c)];}
+      steps.push(path.map(p=>({r:p.r,c:p.c,st:'path'})));
+      return steps;
+    }
+    steps.push([{r,c,st:'visited'}]);
+    const g=(gCost[k]??0)+1;
+    for(const n of nbrs(r,c)){
+      const nk=pk(n.r,n.c);
+      if(!vis.has(nk)&&g<(gCost[nk]??Infinity)){
+        gCost[nk]=g; par[nk]={r,c};
+        push(n.r,n.c,g+H_(n.r,n.c));
+        steps.push([{r:n.r,c:n.c,st:'frontier'}]);
+      }
+    }
+  }
+  steps.push([{r:goalPos.r,c:goalPos.c,st:'stuck'}]);
+  return steps;
+}
+
+// ── 캔버스 설정 ──────────────────────────────────────────────────
+[0,1,2].forEach(i=>{const c=document.getElementById(`c${i}`);c.width=W;c.height=H;});
+const ctxs=[0,1,2].map(i=>document.getElementById(`c${i}`).getContext('2d'));
+
+function initCellSt(){
+  cellSt=Array.from({length:3},()=>Array.from({length:ROWS},()=>new Array(COLS).fill('empty')));
+}
+
+// ── 그리기 ───────────────────────────────────────────────────────
+function drawGrid(ctx,ai){
+  const cs=cellSt[ai], cl=ALGO[ai];
+  ctx.fillStyle='#f2f1df'; ctx.fillRect(0,0,W,H);
+
+  // 격자선
+  ctx.strokeStyle='#c0d4a8'; ctx.lineWidth=.5;
+  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*CELL);ctx.lineTo(W,r*CELL);ctx.stroke();}
+  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*CELL,0);ctx.lineTo(c*CELL,H);ctx.stroke();}
+
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const isSt=r===startPos.r&&c===startPos.c;
+    const isGl=r===goalPos.r&&c===goalPos.c;
+    const isWl=grid[r][c]===1;
+    let fill=null;
+
+    if(isWl)      fill='#2a3820';
+    else if(isSt) fill='#60a5fa';
+    else if(isGl) fill='#e8a0aa';
+    else {
+      const st=cs[r][c];
+      if     (st==='current')  fill=cl.current;
+      else if(st==='visited')  fill=cl.visited;
+      else if(st==='frontier') fill=cl.frontier;
+      else if(st==='path')     fill=cl.path;
+      else if(st==='stuck')    fill=cl.stuck;
+    }
+    if(fill){ctx.fillStyle=fill; ctx.fillRect(c*CELL+1,r*CELL+1,CELL-2,CELL-2);}
+
+    // 현재 탐색 중인 셀 테두리 강조
+    if(cs[r][c]==='current'&&!isSt&&!isGl){
+      ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+      ctx.strokeRect(c*CELL+1,r*CELL+1,CELL-2,CELL-2);
+    }
+
+    // h값 표시 (빈 칸, 시작/목표 제외)
+    if(!isWl&&!isSt&&!isGl){
+      ctx.fillStyle='rgba(0,0,0,0.22)';
+      ctx.font='8px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(H_(r,c), c*CELL+CELL/2, r*CELL+CELL/2);
+    }
+    // 시작/목표 레이블
+    if(isSt){ctx.fillStyle='#fff';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('S',c*CELL+CELL/2,r*CELL+CELL/2);}
+    if(isGl){ctx.fillStyle='#fff';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('G',c*CELL+CELL/2,r*CELL+CELL/2);}
+  }
+}
+
+function drawAll(){ ctxs.forEach((ctx,i)=>drawGrid(ctx,i)); }
+
+// ── 통계 ─────────────────────────────────────────────────────────
+function updateStats(){
+  [0,1,2].forEach(ai=>{
+    const cs=cellSt[ai];
+    let vis=0,path=0,found=false,stuck=false;
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const st=cs[r][c];
+      if(st==='visited'||st==='current') vis++;
+      if(st==='path'){path++;found=true;}
+      if(st==='stuck') stuck=true;
+    }
+    const status=found?`<span class="ok">✅ 성공</span>`:stuck?`<span class="fail">❌ 실패</span>`:'⏳';
+    document.getElementById(`s${ai}`).innerHTML=
+      `방문 <b>${vis}</b>칸 &nbsp;|&nbsp; 경로 <b>${found?path+' 칸':'—'}</b> &nbsp; ${status}`;
+  });
+}
+
+// ── 애니메이션 ───────────────────────────────────────────────────
+let runId=0;
+function getDelay(){const s=parseInt(document.getElementById('speed').value);return Math.max(20,520-s*48);}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function runAnim(){
+  const myId=++runId;
+  document.getElementById('startBtn').disabled=true;
+  const maxLen=Math.max(...allSteps.map(s=>s.length));
+
+  for(let step=0;step<maxLen;step++){
+    if(runId!==myId) return;
+    [0,1,2].forEach(ai=>{
+      const s=allSteps[ai][step];
+      if(!s) return;
+      s.forEach(({r,c,st})=>{
+        if(grid[r][c]===1) return;
+        if((r===startPos.r&&c===startPos.c)||(r===goalPos.r&&c===goalPos.c)) return;
+        cellSt[ai][r][c]=st;
+      });
+    });
+    drawAll(); updateStats();
+    await sleep(getDelay());
+  }
+  if(runId===myId) document.getElementById('startBtn').disabled=false;
+}
+
+// ── 초기화 ───────────────────────────────────────────────────────
+function buildAndReset(){
+  initCellSt();
+  allSteps=[buildHillClimbing(),buildBestFirst(),buildAStar()];
+  drawAll();
+  [0,1,2].forEach(i=>document.getElementById(`s${i}`).textContent='준비 중...');
+  document.getElementById('startBtn').disabled=false;
+}
+
+function newMaze(){ generateMaze(); runId++; buildAndReset(); }
+function reset()  { runId++; buildAndReset(); }
+
+// ── 벽 편집 ──────────────────────────────────────────────────────
+[0,1,2].forEach(i=>{
+  document.getElementById(`c${i}`).addEventListener('click',e=>{
+    if(document.getElementById('startBtn').disabled) return;
+    const rect=e.target.getBoundingClientRect();
+    const c=Math.floor((e.clientX-rect.left)/CELL);
+    const r=Math.floor((e.clientY-rect.top)/CELL);
+    if(r<0||r>=ROWS||c<0||c>=COLS) return;
+    if((r===startPos.r&&c===startPos.c)||(r===goalPos.r&&c===goalPos.c)) return;
+    grid[r][c]=grid[r][c]===1?0:1;
+    reset();
+  });
+});
+
+document.getElementById('genBtn').addEventListener('click',newMaze);
+document.getElementById('resetBtn').addEventListener('click',reset);
+document.getElementById('startBtn').addEventListener('click',()=>{reset();setTimeout(runAnim,80);});
+
+newMaze();
+</script>
+</body>
+</html>
